@@ -15,9 +15,9 @@ app.use(express.static('public'));
 
 //Holds info for the sql server info with the tables and data
 var dbconfig = {
-	server: "localhost\\OWNER",
+	server: "localhost",
 	database: "forumDB",
-	username: "admin",
+	user: "admin",
 	password: "adminpass",
 	port: "1433"
 };
@@ -35,11 +35,11 @@ app.get('/signup',function(req,res){
 app.get('/login',function(req,res){
 	res.render('login');
 });
-app.get('/submit',function(req,res){
+app.post('/signupaction',function(req,res){
 	console.log('submitted');
-	signup();
-	res.render('home');
-})
+	signup(res);
+	res.redirect('/');
+});
 
 
 //lets app knows what port to listen to
@@ -66,6 +66,55 @@ function loadThread(){
 	
 }
 //this function is to add new user info into the sql server and allow for future logins
-function signup(){
+function signup(info){
+	// var conn = new sql.Connection(dbconfig);
+	// conn.connect().then(function(){
+	// 	var request = new sql.Request(dbconfig);
 
+	// 	request.query('INSERT INTO loginInfo VALUES ['
+	// 		+info.body.usrname+','+info.body.supassword+','+info.body.suemail+']'.then(function(recSet){
+	// 		conn.close();
+	// 	}).catch(function(err){
+	// 		console.log(err);
+	// 		conn.close();
+	// 	}));
+	// }).catch(function(err){
+	// 	console.log(err);
+	// });
+	
+	var transaction = new sql.Transaction();
+	transaction.begin(function(err){
+		console.log(err);
+
+		var conreq = new sql.Request(transaction);
+		conreq.query('INSERT INTO loginInfo (usrname,password,email) VALUES ('+info.body.usrname.value+','+info.body.supwd.values +','+info.body.suemail.value+')',function(err){
+			console.log(err);
+		});
+		transaction.commit(err => {
+			if(err){
+				console.log(err);
+			}
+			console.log("transaction completed");
+		});
+	});
+	checkQueries();
+}
+
+
+function checkQueries(){
+	console.log('----QueryChecker-----')
+	sql.connect(dbconfig, function(err){
+		console.log(err);
+		var connreq = new sql.Request();
+		connreq.query('SELECT * FROM loginInfo',function(err, recordset){
+	 	if(err){
+			console.log(err);
+	 	}
+	 	else{
+		console.log(recordset);
+		}
+	 	sql.close();
+	});
+	});
+	console.log('-------Checker Done--------')
 }
